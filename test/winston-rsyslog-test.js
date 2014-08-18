@@ -14,6 +14,7 @@ var path = require('path'),
     Rsyslog = require('../lib/winston-rsyslog').Rsyslog;
 
 var tokenTransport,
+    translateTransport,
     config;
 
 try {
@@ -29,10 +30,21 @@ try {
     hostname: config.transports.rsyslog.localhost,
     tag: config.transports.rsyslog.tag
   });
+  
+  translateTransport = new (Rsyslog)({
+    host: config.transports.rsyslog.host,
+    port: config.transports.rsyslog.port,
+    facility: config.transports.rsyslog.facility,
+    protocol: config.transports.rsyslog.protocol,
+    hostname: config.transports.rsyslog.localhost,
+    tag: config.transports.rsyslog.tag,
+    levels: { foo: 'crit' }
+  });
 }
 catch (ex) {
   console.log('Cannot read file test/config.json. Using defaults.');
   tokenTransport = new (Rsyslog)();
+  translateTransport = new (Rsyslog)();
 }
 
 function assertRsyslog(transport) {
@@ -46,6 +58,10 @@ vows.describe('winston-rsyslog').addBatch({
       assertRsyslog(tokenTransport);
     },
     "the log() method": helpers.testSyslogLevels(tokenTransport, "should log messages to rsyslog", function (ign, err, logged) {
+      assert.isNull(err);
+      assert.isTrue(logged);
+    }),
+    "should translate log levels correctly": helpers.testLevels({ 'foo': true }, translateTransport, "should log messages to rsyslog", function (ign, err, logged) {
       assert.isNull(err);
       assert.isTrue(logged);
     })
